@@ -1,8 +1,10 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { calculateNextReview } from '../utils/srsAlgorithm'
 
 const ProgressContext = createContext(null)
 
 const STORAGE_KEY = 'noor-progress'
+const SRS_STORAGE_KEY = 'noor_srs_data'
 
 const defaultProgress = {
   completedLessons: [],    // e.g. ['alphabet', 'harakat', 'vocab-salutations']
@@ -24,6 +26,16 @@ export function ProgressProvider({ children }) {
     return defaultProgress
   })
 
+  const [srsData, setSrsData] = useState(() => {
+    try {
+      const saved = localStorage.getItem(SRS_STORAGE_KEY)
+      if (saved) return JSON.parse(saved)
+    } catch (e) {
+      console.error('Error loading SRS data:', e)
+    }
+    return {}
+  })
+
   // Persist to localStorage whenever progress changes
   useEffect(() => {
     try {
@@ -32,6 +44,14 @@ export function ProgressProvider({ children }) {
       console.error('Error saving progress:', e)
     }
   }, [progress])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(SRS_STORAGE_KEY, JSON.stringify(srsData))
+    } catch (e) {
+      console.error('Error saving SRS data:', e)
+    }
+  }, [srsData])
 
   const completeLesson = useCallback((lessonId) => {
     setProgress(prev => {

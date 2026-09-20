@@ -54,9 +54,11 @@ export default function QuizPage() {
   const { completeLesson, saveQuizScore } = useProgress()
 
   const config = quizConfig[lessonId]
-  if (!config) return <Navigate to="/arabe" replace />
+  
+  // Appeler le hook avant toute condition de retour
+  const questions = useMemo(() => config ? config.generator() : [], [config])
 
-  const questions = useMemo(() => config.generator(), [lessonId])
+  if (!config) return <Navigate to="/arabe" replace />
 
   const handleComplete = (score) => {
     saveQuizScore(config.lessonId, score)
