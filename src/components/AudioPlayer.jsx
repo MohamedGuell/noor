@@ -36,7 +36,6 @@ export default function VerseAudioPlayer({ verses, onVerseChange, activeVerseNum
       // S'assurer que la source est chargée si ce n'est pas déjà le cas
       if (!audioRef.current.src && verses[currentIndex]) {
          audioRef.current.src = verses[currentIndex].audioUrl
-         audioRef.current.load()
       }
       
       const playPromise = audioRef.current.play()
@@ -60,7 +59,6 @@ export default function VerseAudioPlayer({ verses, onVerseChange, activeVerseNum
     
     // Set src and play immediately to bypass strict browser autoplay policies
     audioRef.current.src = verses[index].audioUrl
-    audioRef.current.load()
     
     if (isPlaying) {
       audioRef.current.play().catch(e => {

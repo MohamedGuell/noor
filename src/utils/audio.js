@@ -1,29 +1,32 @@
 export const playArabicAudio = async (text) => {
   try {
-    // client=gtx est crucial ici : il permet d'éviter les erreurs 403 (Referer) et ne nécessite pas CORS
     const url = `https://translate.googleapis.com/translate_tts?client=gtx&ie=UTF-8&tl=ar&q=${encodeURIComponent(text)}`
+    const audio = new Audio()
+    audio.src = url
     
-    // On utilise directement l'objet Audio du navigateur.
-    // Cela contourne la politique CORS (contrairement à fetch)
-    const audio = new Audio(url)
-    
-    await new Promise((resolve, reject) => {
-      audio.onended = resolve
-      audio.onerror = reject
-      audio.play().catch(reject)
-    })
-    
+    // Play immediately without waiting for load to preserve user gesture
+    const playPromise = audio.play()
+    if (playPromise !== undefined) {
+      await playPromise
+    }
   } catch (err) {
-    console.error("Audio play failed, trying fallback:", err)
+    console.warn("Google TTS failed, falling back to native TTS:", err)
     
-    // Fallback natif au cas où
+    // Fallback natif
     try {
       const utterance = new SpeechSynthesisUtterance(text)
       utterance.lang = 'ar-SA'
+      
+      // Essayer de trouver une voix arabe spécifique pour améliorer la compatibilité
+      const voices = window.speechSynthesis.getVoices()
+      const arabicVoice = voices.find(v => v.lang.startsWith('ar'))
+      if (arabicVoice) {
+        utterance.voice = arabicVoice
+      }
+      
       window.speechSynthesis.speak(utterance)
     } catch (fallbackErr) {
       console.error(fallbackErr)
-      alert("Impossible de lire l'audio. Vérifiez votre connexion.")
     }
   }
 }
