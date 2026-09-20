@@ -3,6 +3,7 @@ import { Link, useParams, Navigate } from 'react-router-dom'
 import { ArrowLeft, CheckCircle2, Eye, EyeOff, Volume2 } from 'lucide-react'
 import { useProgress } from '../../context/ProgressContext'
 import { vocabulary } from '../../data/arabicLessons'
+import { playArabicAudio } from '../../utils/audio'
 
 export default function VocabularyLesson() {
   const { category } = useParams()
@@ -25,12 +26,7 @@ export default function VocabularyLesson() {
   }, [vocabData, category, addCardsToSRS])
   
   const playAudio = (text) => {
-    const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=ar&client=tw-ob`
-    const audio = new Audio(url)
-    audio.play().catch(err => {
-      console.error("Audio play failed:", err)
-      alert("Impossible de lire l'audio. Veuillez vérifier votre connexion.")
-    })
+    playArabicAudio(text)
   }
 
   if (!vocabData) return <Navigate to="/arabe" replace />

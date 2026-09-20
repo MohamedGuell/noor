@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, Eye, EyeOff, Volume2 } from 'lucide-react'
 import { useProgress } from '../../context/ProgressContext'
 import { alphabet } from '../../data/arabicLessons'
+import { playArabicAudio } from '../../utils/audio'
 
 export default function AlphabetLesson() {
   const { isLessonCompleted, completeLesson, addCardsToSRS } = useProgress()
@@ -24,12 +25,7 @@ export default function AlphabetLesson() {
   }, [addCardsToSRS])
 
   const playAudio = (text) => {
-    const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=ar&client=tw-ob`
-    const audio = new Audio(url)
-    audio.play().catch(err => {
-      console.error("Audio play failed:", err)
-      alert("Impossible de lire l'audio.")
-    })
+    playArabicAudio(text)
   }
 
   return (

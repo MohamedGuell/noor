@@ -27,31 +27,35 @@ export default function VerseAudioPlayer({ verses, onVerseChange, activeVerseNum
         setCurrentVerseRepeats(0) // Reset repeats when manually changed
       }
     }
-  }, [activeVerseNumber, verses])
+  }, [activeVerseNumber, verses, currentIndex])
 
-  // Charger le nouveau verset
+  // Charger le nouveau verset (seulement quand l'index change)
   useEffect(() => {
     if (audioRef.current && verses[currentIndex]) {
       audioRef.current.src = verses[currentIndex].audioUrl
       audioRef.current.load()
       
       if (onVerseChange) onVerseChange(verses[currentIndex].number)
-      
-      if (isPlaying) {
-        audioRef.current.play().catch(e => console.log('Autoplay empêché:', e))
-      }
     }
-  }, [currentIndex])
+  }, [currentIndex, verses, onVerseChange])
+
+  // Gérer la lecture automatique après changement de verset ou appui sur Play
+  useEffect(() => {
+    if (isPlaying && audioRef.current) {
+      const playPromise = audioRef.current.play()
+      if (playPromise !== undefined) {
+        playPromise.catch(e => {
+          console.log('Autoplay bloqué:', e)
+          setIsPlaying(false)
+        })
+      }
+    } else if (!isPlaying && audioRef.current) {
+      audioRef.current.pause()
+    }
+  }, [currentIndex, isPlaying])
 
   const togglePlay = () => {
-    if (!audioRef.current) return
-    if (isPlaying) {
-      audioRef.current.pause()
-      setIsPlaying(false)
-    } else {
-      audioRef.current.play().catch(e => console.log('Autoplay bloqué:', e))
-      setIsPlaying(true)
-    }
+    setIsPlaying(!isPlaying)
   }
 
   const playNext = () => {
