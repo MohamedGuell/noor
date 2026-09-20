@@ -1,5 +1,6 @@
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { BookOpen, BookMarked, Star, TrendingUp, RotateCcw } from 'lucide-react'
+import { BookOpen, BookMarked, Star, TrendingUp, RotateCcw, Sparkles, Clock } from 'lucide-react'
 import { useProgress } from '../context/ProgressContext'
 
 export default function Dashboard() {
