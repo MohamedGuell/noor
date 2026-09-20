@@ -16,24 +16,9 @@ export default function VerseAudioPlayer({ verses, onVerseChange, activeVerseNum
   const [rangeStart, setRangeStart] = useState(verses[0]?.number || 1)
   const [rangeEnd, setRangeEnd] = useState(verses[verses.length - 1]?.number || verses.length)
 
-  const audio1Ref = useRef(null)
-  const audio2Ref = useRef(null)
-  const [activePlayer, setActivePlayer] = useState(1) // 1 or 2
-
-  // Preload next verse when currentIndex changes
-  useEffect(() => {
-    const nextIndex = currentIndex + 1
-    if (nextIndex < verses.length) {
-      const nextUrl = verses[nextIndex].audioUrl
-      if (activePlayer === 1 && audio2Ref.current) {
-        if (audio2Ref.current.src !== nextUrl) audio2Ref.current.src = nextUrl
-      } else if (activePlayer === 2 && audio1Ref.current) {
-        if (audio1Ref.current.src !== nextUrl) audio1Ref.current.src = nextUrl
-      }
-    }
-  }, [currentIndex, activePlayer, verses])
-
-  // Synchroniser avec la sélection externe (quand l'utilisateur clique sur un verset)
+  const audioRef = useRef(null)
+  
+  // Synchroniser avec la sélection externe
   useEffect(() => {
     if (activeVerseNumber) {
       const index = verses.findIndex(v => v.number === activeVerseNumber)
@@ -45,39 +30,38 @@ export default function VerseAudioPlayer({ verses, onVerseChange, activeVerseNum
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeVerseNumber, verses])
 
-  // Gérer la lecture automatique lors de l'appui sur Play (si isPlaying change via le bouton togglePlay)
+  // Gérer la lecture automatique si isPlaying change
   useEffect(() => {
-    const activeRef = activePlayer === 1 ? audio1Ref : audio2Ref
-    if (isPlaying && activeRef.current && activeRef.current.paused) {
-      if (!activeRef.current.src && verses[currentIndex]) {
-         activeRef.current.src = verses[currentIndex].audioUrl
+    if (!audioRef.current) return
+    
+    if (isPlaying) {
+      if (!audioRef.current.src && verses[currentIndex]) {
+         audioRef.current.src = verses[currentIndex].audioUrl
       }
-      const playPromise = activeRef.current.play()
-      if (playPromise !== undefined) {
-        playPromise.catch(e => {
+      if (audioRef.current.paused) {
+        audioRef.current.play().catch(e => {
           console.log('Autoplay bloqué:', e)
           setIsPlaying(false)
         })
       }
-    } else if (!isPlaying && activeRef.current && !activeRef.current.paused) {
-      activeRef.current.pause()
+    } else {
+      if (!audioRef.current.paused) {
+        audioRef.current.pause()
+      }
     }
-  }, [isPlaying, currentIndex, verses, activePlayer])
+  }, [isPlaying, currentIndex, verses])
 
   const togglePlay = () => {
     setIsPlaying(!isPlaying)
   }
 
   const playVerseByIndex = (index) => {
-    if (!verses[index]) return
-    const activeRef = activePlayer === 1 ? audio1Ref : audio2Ref
-    if (!activeRef.current) return
+    if (!verses[index] || !audioRef.current) return
     
-    // Set src and play
-    activeRef.current.src = verses[index].audioUrl
+    audioRef.current.src = verses[index].audioUrl
     
     if (isPlaying) {
-      activeRef.current.play().catch(e => {
+      audioRef.current.play().catch(e => {
         console.log('Autoplay bloqué:', e)
         setIsPlaying(false)
       })
@@ -90,40 +74,13 @@ export default function VerseAudioPlayer({ verses, onVerseChange, activeVerseNum
   const playNext = () => {
     if (currentIndex < verses.length - 1) {
       setCurrentVerseRepeats(0)
-      const nextIndex = currentIndex + 1
-      
-      // Ping-Pong Playback
-      const nextPlayer = activePlayer === 1 ? 2 : 1
-      const currentRef = activePlayer === 1 ? audio1Ref : audio2Ref
-      const nextRef = activePlayer === 1 ? audio2Ref : audio1Ref
-      
-      if (currentRef.current) currentRef.current.pause()
-      
-      if (nextRef.current) {
-        // Ensure src is correct just in case preload missed it
-        if (!nextRef.current.src.includes(verses[nextIndex].audioUrl)) {
-          nextRef.current.src = verses[nextIndex].audioUrl
-        }
-        
-        if (isPlaying) {
-          nextRef.current.play().catch(e => {
-            console.log('Autoplay bloqué au suivant:', e)
-            setIsPlaying(false)
-          })
-        }
-      }
-      
-      setActivePlayer(nextPlayer)
-      setCurrentIndex(nextIndex)
-      if (onVerseChange) onVerseChange(verses[nextIndex].number)
-      
+      playVerseByIndex(currentIndex + 1)
     } else {
       if (mode === 'surah') {
         setCurrentIndex(0)
         setIsPlaying(false)
-        const activeRef = activePlayer === 1 ? audio1Ref : audio2Ref
-        if (activeRef.current && verses[0]) {
-          activeRef.current.src = verses[0].audioUrl
+        if (audioRef.current && verses[0]) {
+          audioRef.current.src = verses[0].audioUrl
         }
       }
     }
@@ -147,10 +104,9 @@ export default function VerseAudioPlayer({ verses, onVerseChange, activeVerseNum
     if (mode === 'loop-verse') {
       if (verseRepeatCount === 'infinite' || currentVerseRepeats < verseRepeatCount - 1) {
         setCurrentVerseRepeats(prev => prev + 1)
-        const activeRef = activePlayer === 1 ? audio1Ref : audio2Ref
-        if (activeRef.current) {
-          activeRef.current.currentTime = 0
-          activeRef.current.play().catch(console.error)
+        if (audioRef.current) {
+          audioRef.current.currentTime = 0
+          audioRef.current.play().catch(console.error)
         }
       } else {
         setCurrentVerseRepeats(0)
@@ -178,22 +134,23 @@ export default function VerseAudioPlayer({ verses, onVerseChange, activeVerseNum
     playNext()
   }
 
+  const handlePause = () => {
+    // Si l'audio est en pause car il est arrivé à la fin (ended), on ne modifie pas isPlaying, 
+    // car handleEnded va lancer le suivant. Sinon, on met isPlaying à false (ex: interruption par le système).
+    if (audioRef.current && !audioRef.current.ended) {
+      setIsPlaying(false)
+    }
+  }
+
   if (!verses || verses.length === 0) return null
 
   return (
     <div className="bg-white dark:bg-gray-800/90 backdrop-blur-md rounded-2xl p-4 sm:p-5 flex flex-col gap-4 my-6 sticky top-4 z-40 border border-emerald-100 dark:border-emerald-900/40 shadow-xl shadow-emerald-900/5">
-      {/* Dual Audio Elements for Ping-Pong Gapless Playback on iOS Safari */}
       <audio
-        ref={audio1Ref}
-        onEnded={activePlayer === 1 ? handleEnded : undefined}
-        onPause={() => { if (activePlayer === 1) setIsPlaying(false) }}
-        onPlay={() => { if (activePlayer === 1) setIsPlaying(true) }}
-      />
-      <audio
-        ref={audio2Ref}
-        onEnded={activePlayer === 2 ? handleEnded : undefined}
-        onPause={() => { if (activePlayer === 2) setIsPlaying(false) }}
-        onPlay={() => { if (activePlayer === 2) setIsPlaying(true) }}
+        ref={audioRef}
+        onEnded={handleEnded}
+        onPause={handlePause}
+        onPlay={() => setIsPlaying(true)}
       />
       
       {/* Main Controls row */}
