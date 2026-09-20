@@ -25,20 +25,12 @@ export default function VocabularyLesson() {
   }, [vocabData, category, addCardsToSRS])
   
   const playAudio = (text) => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel()
-      const utterance = new SpeechSynthesisUtterance(text)
-      utterance.lang = 'ar-SA'
-      utterance.rate = 0.8
-      const voices = window.speechSynthesis.getVoices()
-      const arabicVoice = voices.find(v => v.lang.startsWith('ar'))
-      if (arabicVoice) utterance.voice = arabicVoice
-      
-      utterance.onerror = () => {
-        alert("La synthèse vocale en arabe n'est pas supportée.")
-      }
-      window.speechSynthesis.speak(utterance)
-    }
+    const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=ar&client=tw-ob`
+    const audio = new Audio(url)
+    audio.play().catch(err => {
+      console.error("Audio play failed:", err)
+      alert("Impossible de lire l'audio. Veuillez vérifier votre connexion.")
+    })
   }
 
   if (!vocabData) return <Navigate to="/arabe" replace />

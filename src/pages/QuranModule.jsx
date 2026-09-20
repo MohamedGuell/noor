@@ -56,42 +56,42 @@ export default function QuranModule() {
       <div className="flex items-center gap-4">
         <Link
           to="/"
-          className="p-2 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          className="p-2.5 rounded-2xl bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-700 backdrop-blur-md shadow-sm border border-slate-200/50 dark:border-slate-700/50 transition-all"
         >
-          <ArrowLeft size={20} className="text-gray-600 dark:text-gray-400" />
+          <ArrowLeft size={20} className="text-slate-600 dark:text-slate-400" />
         </Link>
         <div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
+          <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
             Étudier le Coran
           </h2>
-          <p className="text-gray-600 dark:text-gray-400 text-sm">
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
             Lisez, écoutez et mémorisez les 114 sourates.
           </p>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl">
+      <div className="flex gap-2 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md p-1.5 rounded-2xl border border-slate-200/50 dark:border-slate-800/50 shadow-sm">
         <button
           onClick={() => setActiveTab('surahs')}
-          className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+          className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold transition-all duration-300 ${
             activeTab === 'surahs'
-              ? 'bg-white dark:bg-gray-700 text-amber-700 dark:text-amber-400 shadow-sm'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              ? 'bg-gradient-to-r from-gold to-gold-light text-slate-900 shadow-md scale-[1.02]'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
           }`}
         >
-          <BookMarked size={16} />
+          <BookMarked size={18} />
           Sourates
         </button>
         <button
           onClick={() => setActiveTab('tajweed')}
-          className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+          className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold transition-all duration-300 ${
             activeTab === 'tajweed'
-              ? 'bg-white dark:bg-gray-700 text-amber-700 dark:text-amber-400 shadow-sm'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              ? 'bg-gradient-to-r from-gold to-gold-light text-slate-900 shadow-md scale-[1.02]'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
           }`}
         >
-          <BookOpen size={16} />
+          <BookOpen size={18} />
           Tajweed
         </button>
       </div>
@@ -103,32 +103,32 @@ export default function QuranModule() {
           <div className="flex flex-wrap gap-3">
             <button
               onClick={() => setShowTransliteration(!showTransliteration)}
-              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-sm ${
                 showTransliteration
-                  ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
+                  ? 'bg-slate-900 text-white dark:bg-emerald-500 dark:text-slate-900'
+                  : 'bg-white/80 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
               }`}
             >
-              {showTransliteration ? <Eye size={12} /> : <EyeOff size={12} />}
+              {showTransliteration ? <Eye size={14} /> : <EyeOff size={14} />}
               Translittération
             </button>
             <button
               onClick={() => setShowTranslation(!showTranslation)}
-              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-sm ${
                 showTranslation
-                  ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
+                  ? 'bg-slate-900 text-white dark:bg-emerald-500 dark:text-slate-900'
+                  : 'bg-white/80 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
               }`}
             >
-              {showTranslation ? <Eye size={12} /> : <EyeOff size={12} />}
+              {showTranslation ? <Eye size={14} /> : <EyeOff size={14} />}
               Traduction française
             </button>
           </div>
 
           {/* Loading State */}
           {isLoadingList ? (
-            <div className="flex justify-center py-10">
-              <Loader2 className="animate-spin text-amber-500" size={32} />
+            <div className="flex justify-center py-12">
+              <Loader2 className="animate-spin text-emerald-500" size={40} />
             </div>
           ) : (
             <div className="space-y-4">
@@ -140,12 +140,12 @@ export default function QuranModule() {
                 return (
                   <div
                     key={surahListInfo.number}
-                    className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden"
+                    className={`bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl border transition-all duration-300 overflow-hidden ${isExpanded ? 'border-emerald-500/50 shadow-xl shadow-emerald-900/10' : 'border-slate-200/50 dark:border-slate-700/50 hover:border-emerald-500/30'}`}
                   >
                     {/* Surah Header */}
                     <button
                       onClick={() => handleToggleSurah(surahListInfo.number)}
-                      className="w-full flex items-center justify-between p-5 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
+                      className="w-full flex items-center justify-between p-5 hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors"
                     >
                       <div className="flex items-center gap-4">
                         <div className="w-10 h-10 bg-amber-50 dark:bg-amber-900/30 rounded-xl flex items-center justify-center text-amber-700 dark:text-amber-400 font-bold text-sm shrink-0">
