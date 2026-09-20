@@ -48,11 +48,13 @@ export function ProgressProvider({ children }) {
       }
       for (const [level, lessons] of Object.entries(levelLessons)) {
         const lvl = parseInt(level)
-        if (lvl > updated.currentLevel && lessons.every(l => updated.completedLessons.includes(l))) {
-          // Don't auto-advance past needed level
-        }
         if (lvl === updated.currentLevel) {
           const allDone = lessons.every(l => updated.completedLessons.includes(l))
+          if (allDone) {
+            updated.currentLevel = lvl + 1
+          }
+        }
+      }
       return updated
     })
   }, [])
