@@ -1,17 +1,54 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, BookMarked, CheckCircle2, ChevronDown, ChevronUp, BookOpen, Eye, EyeOff } from 'lucide-react'
+import { ArrowLeft, BookMarked, CheckCircle2, ChevronDown, ChevronUp, BookOpen, Eye, EyeOff, Loader2 } from 'lucide-react'
 import { useProgress } from '../context/ProgressContext'
-import { surahs, tajweedRules } from '../data/quranData'
-import AudioPlayer from '../components/AudioPlayer'
+import { tajweedRules } from '../data/quranData'
+import VerseAudioPlayer from '../components/AudioPlayer'
+import { fetchSurahsList, fetchSurah } from '../services/api'
 
 export default function QuranModule() {
   const { isSurahMemorized, toggleSurahMemorized } = useProgress()
+  const [surahsList, setSurahsList] = useState([])
   const [expandedSurah, setExpandedSurah] = useState(null)
+  const [surahDetails, setSurahDetails] = useState({}) // Cache pour les sourates téléchargées
+  const [isLoadingList, setIsLoadingList] = useState(true)
+  const [isLoadingSurah, setIsLoadingSurah] = useState(false)
+  const [activeVerse, setActiveVerse] = useState(null) // Pour tracker le verset en lecture continue
+  
   const [showTransliteration, setShowTransliteration] = useState(true)
   const [showTranslation, setShowTranslation] = useState(true)
-  const [activeTab, setActiveTab] = useState('surahs') // 'surahs' or 'tajweed'
+  const [activeTab, setActiveTab] = useState('surahs')
   const [expandedTajweed, setExpandedTajweed] = useState(null)
+
+  // Charger la liste des 114 sourates au montage
+  useEffect(() => {
+    const loadSurahs = async () => {
+      const list = await fetchSurahsList()
+      setSurahsList(list)
+      setIsLoadingList(false)
+    }
+    loadSurahs()
+  }, [])
+
+  // Gérer l'ouverture d'une sourate
+  const handleToggleSurah = async (surahNumber) => {
+    if (expandedSurah === surahNumber) {
+      setExpandedSurah(null)
+      return
+    }
+    
+    setExpandedSurah(surahNumber)
+    
+    // Si pas encore en cache, on la fetch
+    if (!surahDetails[surahNumber]) {
+      setIsLoadingSurah(true)
+      const data = await fetchSurah(surahNumber)
+      if (data) {
+        setSurahDetails(prev => ({ ...prev, [surahNumber]: data }))
+      }
+      setIsLoadingSurah(false)
+    }
+  }
 
   return (
     <div className="space-y-8 pb-20 md:pb-0">
@@ -28,7 +65,7 @@ export default function QuranModule() {
             Étudier le Coran
           </h2>
           <p className="text-gray-600 dark:text-gray-400 text-sm">
-            Lisez, mémorisez et apprenez les règles du Tajweed.
+            Lisez, écoutez et mémorisez les 114 sourates.
           </p>
         </div>
       </div>
@@ -88,121 +125,151 @@ export default function QuranModule() {
             </button>
           </div>
 
-          {/* Surah List */}
-          <div className="space-y-4">
-            {surahs.map((surah) => {
-              const isExpanded = expandedSurah === surah.number
-              const memorized = isSurahMemorized(surah.number)
+          {/* Loading State */}
+          {isLoadingList ? (
+            <div className="flex justify-center py-10">
+              <Loader2 className="animate-spin text-amber-500" size={32} />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {surahsList.map((surahListInfo) => {
+                const isExpanded = expandedSurah === surahListInfo.number
+                const memorized = isSurahMemorized(surahListInfo.number)
+                const fullSurah = surahDetails[surahListInfo.number]
 
-              return (
-                <div
-                  key={surah.number}
-                  className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden"
-                >
-                  {/* Surah Header */}
-                  <button
-                    onClick={() => setExpandedSurah(isExpanded ? null : surah.number)}
-                    className="w-full flex items-center justify-between p-5 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
+                return (
+                  <div
+                    key={surahListInfo.number}
+                    className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden"
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-amber-50 dark:bg-amber-900/30 rounded-xl flex items-center justify-center text-amber-700 dark:text-amber-400 font-bold text-sm">
-                        {surah.number}
-                      </div>
-                      <div className="text-left">
-                        <div className="flex items-center gap-3">
-                          <h3 className="font-semibold text-gray-900 dark:text-white">
-                            {surah.nameFr}
-                          </h3>
-                          {memorized && (
-                            <CheckCircle2 size={16} className="text-emerald-500" />
-                          )}
+                    {/* Surah Header */}
+                    <button
+                      onClick={() => handleToggleSurah(surahListInfo.number)}
+                      className="w-full flex items-center justify-between p-5 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-amber-50 dark:bg-amber-900/30 rounded-xl flex items-center justify-center text-amber-700 dark:text-amber-400 font-bold text-sm shrink-0">
+                          {surahListInfo.number}
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                          <span className="font-arabic">{surah.nameAr}</span>
-                          <span>•</span>
-                          <span>{surah.versesCount} versets</span>
-                          <span>•</span>
-                          <span>{surah.revelationType}</span>
-                        </div>
-                      </div>
-                    </div>
-                    {isExpanded ? (
-                      <ChevronUp size={18} className="text-gray-400" />
-                    ) : (
-                      <ChevronDown size={18} className="text-gray-400" />
-                    )}
-                  </button>
-
-                  {/* Expanded: Verses */}
-                  {isExpanded && (
-                    <div className="border-t border-gray-100 dark:border-gray-700">
-                      <div className="px-5">
-                        <AudioPlayer surahNumber={surah.number} />
-                      </div>
-                      
-                      {/* Bismillah ornament */}
-                      {surah.number !== 1 && (
-                        <div className="text-center pb-4 pt-2">
-                          <p className="font-arabic text-xl text-amber-800 dark:text-amber-400">
-                            بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
-                          </p>
-                        </div>
-                      )}
-
-                      {/* Verses */}
-                      <div className="divide-y divide-gray-50 dark:divide-gray-700/50">
-                        {surah.verses.map((verse) => (
-                          <div key={verse.number} className="p-5">
-                            {/* Verse Number */}
-                            <div className="flex items-start gap-3">
-                              <span className="flex-shrink-0 w-7 h-7 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center text-xs font-bold text-amber-700 dark:text-amber-400 mt-2">
-                                {verse.number}
-                              </span>
-                              <div className="flex-1 space-y-2">
-                                {/* Arabic Text */}
-                                <p className="font-arabic text-2xl sm:text-3xl text-gray-900 dark:text-white text-right leading-[2.5] tracking-wide">
-                                  {verse.ar}
-                                </p>
-
-                                {/* Transliteration */}
-                                {showTransliteration && (
-                                  <p className="text-sm text-amber-700 dark:text-amber-400 italic">
-                                    {verse.transliteration}
-                                  </p>
-                                )}
-
-                                {/* French Translation */}
-                                {showTranslation && (
-                                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                                    {verse.fr}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
+                        <div className="text-left">
+                          <div className="flex items-center gap-3">
+                            <h3 className="font-semibold text-gray-900 dark:text-white">
+                              {surahListInfo.englishNameTranslation}
+                            </h3>
+                            {memorized && (
+                              <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
+                            )}
                           </div>
-                        ))}
+                          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                            <span className="font-arabic">{surahListInfo.name}</span>
+                            <span>•</span>
+                            <span>{surahListInfo.numberOfAyahs} versets</span>
+                          </div>
+                        </div>
                       </div>
+                      {isExpanded ? (
+                        <ChevronUp size={18} className="text-gray-400 shrink-0" />
+                      ) : (
+                        <ChevronDown size={18} className="text-gray-400 shrink-0" />
+                      )}
+                    </button>
 
-                      {/* Memorized Toggle */}
-                      <div className="p-4 bg-gray-50 dark:bg-gray-700/30 flex justify-center">
-                        <button
-                          onClick={() => toggleSurahMemorized(surah.number)}
-                          className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-xl font-medium text-sm transition-all ${
-                            memorized
-                              ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-900/50'
-                              : 'bg-amber-600 hover:bg-amber-700 text-white shadow-lg shadow-amber-500/20'
-                          }`}
-                        >
-                          <CheckCircle2 size={16} />
-                          {memorized ? 'Mémorisée ✓' : 'Marquer comme mémorisée'}
-                        </button>
+                    {/* Expanded: Verses */}
+                    {isExpanded && (
+                      <div className="border-t border-gray-100 dark:border-gray-700">
+                        {isLoadingSurah && !fullSurah ? (
+                          <div className="flex justify-center py-8">
+                            <Loader2 className="animate-spin text-amber-500" size={24} />
+                          </div>
+                        ) : fullSurah ? (
+                          <>
+                            <div className="px-5">
+                              <VerseAudioPlayer 
+                                verses={fullSurah.verses} 
+                                activeVerseNumber={activeVerse}
+                                onVerseChange={(num) => setActiveVerse(num)}
+                              />
+                            </div>
+                            
+                            {/* Bismillah ornament */}
+                            {surahListInfo.number !== 1 && (
+                              <div className="text-center pb-4 pt-2">
+                                <p className="font-arabic text-xl text-amber-800 dark:text-amber-400">
+                                  بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
+                                </p>
+                              </div>
+                            )}
+
+                            {/* Verses */}
+                            <div className="divide-y divide-gray-50 dark:divide-gray-700/50">
+                              {fullSurah.verses.map((verse) => (
+                                <div 
+                                  key={verse.number} 
+                                  id={`verse-${verse.number}`}
+                                  onClick={() => setActiveVerse(verse.number)}
+                                  className={`p-5 cursor-pointer transition-colors ${
+                                    activeVerse === verse.number 
+                                      ? 'bg-amber-50/50 dark:bg-amber-900/10' 
+                                      : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                                  }`}
+                                >
+                                  {/* Verse Number */}
+                                  <div className="flex items-start gap-3">
+                                    <span className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold mt-2 transition-colors ${
+                                      activeVerse === verse.number
+                                        ? 'bg-amber-500 text-white shadow-md'
+                                        : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
+                                    }`}>
+                                      {verse.number}
+                                    </span>
+                                    <div className="flex-1 space-y-2">
+                                      {/* Arabic Text */}
+                                      <p className="font-arabic text-2xl sm:text-3xl text-gray-900 dark:text-white text-right leading-[2.5] tracking-wide">
+                                        {verse.ar}
+                                      </p>
+
+                                      {/* Transliteration */}
+                                      {showTransliteration && (
+                                        <p className="text-sm text-amber-700 dark:text-amber-400 italic">
+                                          {verse.transliteration}
+                                        </p>
+                                      )}
+
+                                      {/* French Translation */}
+                                      {showTranslation && (
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                                          {verse.fr}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+
+                            {/* Memorized Toggle */}
+                            <div className="p-4 bg-gray-50 dark:bg-gray-700/30 flex justify-center">
+                              <button
+                                onClick={() => toggleSurahMemorized(surahListInfo.number)}
+                                className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-xl font-medium text-sm transition-all ${
+                                  memorized
+                                    ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-900/50'
+                                    : 'bg-amber-600 hover:bg-amber-700 text-white shadow-lg shadow-amber-500/20'
+                                }`}
+                              >
+                                <CheckCircle2 size={16} />
+                                {memorized ? 'Mémorisée ✓' : 'Marquer comme mémorisée'}
+                              </button>
+                            </div>
+                          </>
+                        ) : null}
                       </div>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       )}
 

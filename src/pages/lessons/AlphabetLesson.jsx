@@ -12,12 +12,27 @@ export default function AlphabetLesson() {
 
   const playAudio = (text) => {
     if ('speechSynthesis' in window) {
-      // Annuler l'audio précédent
       window.speechSynthesis.cancel()
+      
       const utterance = new SpeechSynthesisUtterance(text)
-      utterance.lang = 'ar-SA' // Arabe
-      utterance.rate = 0.8 // Un peu plus lent pour bien entendre
+      utterance.lang = 'ar-SA'
+      utterance.rate = 0.8
+      
+      // Check if an Arabic voice is available (mobile browsers sometimes don't have it)
+      const voices = window.speechSynthesis.getVoices()
+      const arabicVoice = voices.find(v => v.lang.startsWith('ar'))
+      if (arabicVoice) {
+        utterance.voice = arabicVoice
+      }
+      
+      utterance.onerror = (e) => {
+        console.warn('Erreur audio speechSynthesis:', e)
+        alert("La synthèse vocale en arabe n'est pas supportée par votre navigateur.")
+      }
+      
       window.speechSynthesis.speak(utterance)
+    } else {
+      alert("Votre navigateur ne supporte pas l'audio.")
     }
   }
 

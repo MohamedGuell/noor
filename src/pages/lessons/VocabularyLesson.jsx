@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useParams, Navigate } from 'react-router-dom'
-import { ArrowLeft, CheckCircle2, Eye, EyeOff } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, Eye, EyeOff, Volume2 } from 'lucide-react'
 import { useProgress } from '../../context/ProgressContext'
 import { vocabulary } from '../../data/arabicLessons'
 
@@ -10,6 +10,24 @@ export default function VocabularyLesson() {
   const [revealedWords, setRevealedWords] = useState(new Set())
 
   const vocabData = vocabulary[category]
+  
+  const playAudio = (text) => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel()
+      const utterance = new SpeechSynthesisUtterance(text)
+      utterance.lang = 'ar-SA'
+      utterance.rate = 0.8
+      const voices = window.speechSynthesis.getVoices()
+      const arabicVoice = voices.find(v => v.lang.startsWith('ar'))
+      if (arabicVoice) utterance.voice = arabicVoice
+      
+      utterance.onerror = () => {
+        alert("La synthèse vocale en arabe n'est pas supportée.")
+      }
+      window.speechSynthesis.speak(utterance)
+    }
+  }
+
   if (!vocabData) return <Navigate to="/arabe" replace />
 
   const lessonId = `vocab-${category}`
@@ -99,6 +117,13 @@ export default function VocabularyLesson() {
                     <span className="text-sm text-amber-600 dark:text-amber-400 font-medium">
                       [{word.phonetic}]
                     </span>
+                    <button 
+                      onClick={() => playAudio(word.ar)}
+                      className="p-1.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-800/50 transition-colors ml-2"
+                      title="Écouter"
+                    >
+                      <Volume2 size={14} />
+                    </button>
                   </div>
                   {isRevealed && (
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 animate-in">

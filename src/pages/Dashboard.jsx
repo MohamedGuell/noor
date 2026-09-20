@@ -67,56 +67,67 @@ export default function Dashboard() {
             <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Sourates mémorisées</span>
           </div>
           <p className="text-2xl font-bold text-gray-900 dark:text-white">
-            {memorizedCount} <span className="text-sm font-normal text-gray-500">/ {totalSurahs}</span>
+            {memorizedCount} <span className="text-sm font-normal text-gray-500">/ 114</span>
           </p>
         </div>
       </section>
 
       {/* Main Navigation Cards */}
-      <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Link
           to="/arabe"
-          className="group relative overflow-hidden bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-3xl p-8 text-white card-hover shadow-lg shadow-emerald-500/20"
+          className="group relative overflow-hidden bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-3xl p-6 text-white card-hover shadow-lg shadow-emerald-500/20"
         >
-          <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
           <div className="relative z-10">
-            <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
-              <BookOpen size={28} />
+            <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+              <BookOpen size={24} />
             </div>
-            <h3 className="text-2xl font-bold mb-2">Apprendre l'Arabe</h3>
-            <p className="text-emerald-100 text-sm">
-              L'alphabet, les voyelles, le vocabulaire et plus encore. Progressez à votre rythme.
+            <h3 className="text-xl font-bold mb-2">Apprendre l'Arabe</h3>
+            <p className="text-emerald-100 text-sm mb-4 line-clamp-2">
+              L'alphabet, les voyelles, le vocabulaire.
             </p>
-            <div className="mt-4 flex items-center justify-between">
-              <span className="inline-flex items-center gap-2 text-sm font-semibold bg-white/20 px-4 py-2 rounded-full">
-                Commencer →
-              </span>
-              <span className="text-sm text-emerald-200">{completedCount}/{totalLessons} leçons</span>
-            </div>
+            <span className="inline-flex items-center gap-2 text-sm font-semibold bg-white/20 px-4 py-2 rounded-full">
+              Commencer →
+            </span>
           </div>
         </Link>
 
         <Link
           to="/coran"
-          className="group relative overflow-hidden bg-gradient-to-br from-amber-600 to-amber-800 rounded-3xl p-8 text-white card-hover shadow-lg shadow-amber-500/20"
+          className="group relative overflow-hidden bg-gradient-to-br from-amber-600 to-amber-800 rounded-3xl p-6 text-white card-hover shadow-lg shadow-amber-500/20"
         >
-          <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
           <div className="relative z-10">
-            <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
-              <BookMarked size={28} />
+            <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+              <BookMarked size={24} />
             </div>
-            <h3 className="text-2xl font-bold mb-2">Étudier le Coran</h3>
-            <p className="text-amber-100 text-sm">
-              Lisez, mémorisez et apprenez les règles du Tajweed des sourates du Coran.
+            <h3 className="text-xl font-bold mb-2">Étudier le Coran</h3>
+            <p className="text-amber-100 text-sm mb-4 line-clamp-2">
+              Lisez, mémorisez et apprenez le Tajweed.
             </p>
-            <div className="mt-4 flex items-center justify-between">
-              <span className="inline-flex items-center gap-2 text-sm font-semibold bg-white/20 px-4 py-2 rounded-full">
-                Commencer →
-              </span>
-              <span className="text-sm text-amber-200">{memorizedCount}/{totalSurahs} sourates</span>
+            <span className="inline-flex items-center gap-2 text-sm font-semibold bg-white/20 px-4 py-2 rounded-full">
+              Commencer →
+            </span>
+          </div>
+        </Link>
+        
+        <Link
+          to="/prieres"
+          className="group relative overflow-hidden bg-gradient-to-br from-blue-600 to-blue-800 rounded-3xl p-6 text-white card-hover shadow-lg shadow-blue-500/20"
+        >
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+          <div className="relative z-10">
+            <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+              <Clock size={24} />
             </div>
+            <h3 className="text-xl font-bold mb-2">Heures de Prières</h3>
+            <p className="text-blue-100 text-sm mb-4 line-clamp-2">
+              Consultez les horaires locaux.
+            </p>
+            <span className="inline-flex items-center gap-2 text-sm font-semibold bg-white/20 px-4 py-2 rounded-full">
+              Consulter →
+            </span>
           </div>
         </Link>
       </section>
