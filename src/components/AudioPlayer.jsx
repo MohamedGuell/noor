@@ -6,9 +6,13 @@ export default function VerseAudioPlayer({ verses, onVerseChange, activeVerseNum
   const [currentIndex, setCurrentIndex] = useState(0)
   
   // Modes: 'surah', 'verse', 'loop-verse', 'range'
-  const [mode, setMode] = useState('surah') 
+  const [playScope, setPlayScope] = useState('surah') // 'surah', 'verse', 'range'
+  
+  // Repeats
   const [verseRepeatCount, setVerseRepeatCount] = useState(1)
   const [currentVerseRepeats, setCurrentVerseRepeats] = useState(0)
+  const [scopeRepeatCount, setScopeRepeatCount] = useState(1)
+  const [currentScopeRepeats, setCurrentScopeRepeats] = useState(0)
   
   const [showSettings, setShowSettings] = useState(false)
   
@@ -24,6 +28,7 @@ export default function VerseAudioPlayer({ verses, onVerseChange, activeVerseNum
       const index = verses.findIndex(v => v.number === activeVerseNumber)
       if (index !== -1 && index !== currentIndex) {
         setCurrentVerseRepeats(0)
+        setCurrentScopeRepeats(0)
         playVerseByIndex(index)
       }
     }
@@ -72,17 +77,36 @@ export default function VerseAudioPlayer({ verses, onVerseChange, activeVerseNum
   }
 
   const playNext = () => {
-    if (currentIndex < verses.length - 1) {
-      setCurrentVerseRepeats(0)
-      playVerseByIndex(currentIndex + 1)
+    setCurrentVerseRepeats(0)
+    let isScopeEnd = false
+    let nextIndex = currentIndex + 1
+    let startIndex = 0
+
+    if (playScope === 'verse') {
+      isScopeEnd = true
+      startIndex = currentIndex
+    } else if (playScope === 'range') {
+      const endIndex = verses.findIndex(v => v.number === rangeEnd)
+      startIndex = Math.max(0, verses.findIndex(v => v.number === rangeStart))
+      if (currentIndex >= endIndex) isScopeEnd = true
     } else {
-      if (mode === 'surah') {
-        setCurrentIndex(0)
+      if (currentIndex >= verses.length - 1) isScopeEnd = true
+    }
+
+    if (isScopeEnd) {
+      if (scopeRepeatCount === 'infinite' || currentScopeRepeats < scopeRepeatCount - 1) {
+        setCurrentScopeRepeats(prev => prev + 1)
+        playVerseByIndex(startIndex)
+      } else {
+        setCurrentScopeRepeats(0)
         setIsPlaying(false)
-        if (audioRef.current && verses[0]) {
-          audioRef.current.src = verses[0].audioUrl
+        setCurrentIndex(startIndex)
+        if (audioRef.current && verses[startIndex]) {
+          audioRef.current.src = verses[startIndex].audioUrl
         }
       }
+    } else {
+      if (nextIndex < verses.length) playVerseByIndex(nextIndex)
     }
   }
 
@@ -94,49 +118,21 @@ export default function VerseAudioPlayer({ verses, onVerseChange, activeVerseNum
   }
 
   const handleEnded = () => {
-    const currentVerseNum = verses[currentIndex].number
-
-    if (mode === 'verse') {
-      setIsPlaying(false)
-      return
-    }
-
-    if (mode === 'loop-verse') {
-      if (verseRepeatCount === 'infinite' || currentVerseRepeats < verseRepeatCount - 1) {
-        setCurrentVerseRepeats(prev => prev + 1)
-        if (audioRef.current) {
-          audioRef.current.currentTime = 0
-          audioRef.current.play().catch(console.error)
-        }
-      } else {
-        setCurrentVerseRepeats(0)
-        playNext()
+    // 1. Check verse repeat
+    if (verseRepeatCount === 'infinite' || currentVerseRepeats < verseRepeatCount - 1) {
+      setCurrentVerseRepeats(prev => prev + 1)
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0
+        audioRef.current.play().catch(console.error)
       }
       return
     }
 
-    if (mode === 'range') {
-      if (currentVerseNum < rangeEnd) {
-        playNext()
-      } else {
-        const startIndex = verses.findIndex(v => v.number === rangeStart)
-        if (startIndex !== -1) {
-          setCurrentVerseRepeats(0)
-          playVerseByIndex(startIndex)
-        } else {
-          setIsPlaying(false)
-        }
-      }
-      return
-    }
-
-    // Default mode: 'surah'
+    // 2. Move to next step in scope
     playNext()
   }
 
   const handlePause = () => {
-    // Si l'audio est en pause car il est arrivé à la fin (ended), on ne modifie pas isPlaying, 
-    // car handleEnded va lancer le suivant. Sinon, on met isPlaying à false (ex: interruption par le système).
     if (audioRef.current && !audioRef.current.ended) {
       setIsPlaying(false)
     }
@@ -144,8 +140,10 @@ export default function VerseAudioPlayer({ verses, onVerseChange, activeVerseNum
 
   if (!verses || verses.length === 0) return null
 
+  const repeatOptions = [1, 2, 3, 5, 10, 'infinite']
+
   return (
-    <div className="bg-white dark:bg-gray-800/90 backdrop-blur-md rounded-2xl p-4 sm:p-5 flex flex-col gap-4 my-6 sticky top-4 z-40 border border-emerald-100 dark:border-emerald-900/40 shadow-xl shadow-emerald-900/5">
+    <div className="bg-white dark:bg-gray-800/90 backdrop-blur-md rounded-2xl p-4 sm:p-5 flex flex-col gap-4 my-6 sticky top-4 z-40 border border-emerald-100 dark:border-emerald-900/40 shadow-xl shadow-emerald-900/5 transition-all">
       <audio
         ref={audioRef}
         onEnded={handleEnded}
@@ -156,15 +154,23 @@ export default function VerseAudioPlayer({ verses, onVerseChange, activeVerseNum
       {/* Main Controls row */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex flex-wrap items-center gap-2 mb-1">
             <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400">
               Verset {verses[currentIndex]?.number}
             </span>
-            <span className="text-xs text-gray-400">
-              {mode === 'surah' && 'Sourate complète'}
-              {mode === 'verse' && '1 Verset'}
-              {mode === 'loop-verse' && 'Boucle'}
-              {mode === 'range' && `Plage: ${rangeStart}-${rangeEnd}`}
+            <span className="text-xs font-medium text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+              {playScope === 'surah' && 'Sourate complète'}
+              {playScope === 'verse' && 'Verset unique'}
+              {playScope === 'range' && `Plage: ${rangeStart}-${rangeEnd}`}
+              
+              {(verseRepeatCount !== 1 || scopeRepeatCount !== 1) && (
+                <span className="flex items-center gap-1 ml-1 px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[10px] uppercase tracking-wider">
+                  <Repeat1 size={10} /> 
+                  {verseRepeatCount !== 1 && `Verset ${verseRepeatCount === 'infinite' ? '∞' : verseRepeatCount + 'x'}`}
+                  {verseRepeatCount !== 1 && scopeRepeatCount !== 1 && ' • '}
+                  {scopeRepeatCount !== 1 && `Sélection ${scopeRepeatCount === 'infinite' ? '∞' : scopeRepeatCount + 'x'}`}
+                </span>
+              )}
             </span>
           </div>
           <p className="text-sm font-arabic text-gray-800 dark:text-gray-200 truncate pr-4">
@@ -189,8 +195,18 @@ export default function VerseAudioPlayer({ verses, onVerseChange, activeVerseNum
           </button>
           
           <button
-            onClick={playNext}
-            disabled={currentIndex === verses.length - 1}
+            onClick={() => {
+              setCurrentVerseRepeats(0)
+              let nextIndex = currentIndex + 1
+              if (playScope === 'range') {
+                const endIndex = verses.findIndex(v => v.number === rangeEnd)
+                if (currentIndex >= endIndex) {
+                  nextIndex = verses.findIndex(v => v.number === rangeStart)
+                }
+              }
+              if (nextIndex < verses.length) playVerseByIndex(nextIndex)
+            }}
+            disabled={playScope === 'surah' && currentIndex === verses.length - 1}
             className="p-2.5 text-emerald-700 dark:text-emerald-400 disabled:opacity-30 hover:bg-emerald-50 dark:hover:bg-emerald-900/40 rounded-full transition-colors"
           >
             <SkipForward size={20} fill="currentColor" />
@@ -212,90 +228,117 @@ export default function VerseAudioPlayer({ verses, onVerseChange, activeVerseNum
 
       {/* Advanced Settings Panel */}
       {showSettings && (
-        <div className="pt-4 mt-2 border-t border-gray-100 dark:border-gray-700 grid grid-cols-1 md:grid-cols-2 gap-4 animate-in slide-in-from-top-2">
-          {/* Mode Selection */}
-          <div className="space-y-2">
-            <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-              Mode de lecture
-            </label>
-            <div className="flex flex-wrap gap-2">
-              <button 
-                onClick={() => setMode('surah')}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${mode === 'surah' ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400' : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-              >
-                Continue
-              </button>
-              <button 
-                onClick={() => setMode('verse')}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${mode === 'verse' ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400' : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-              >
-                1 Verset
-              </button>
-              <button 
-                onClick={() => setMode('loop-verse')}
-                className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 text-sm font-medium transition-colors ${mode === 'loop-verse' ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400' : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-              >
-                <Repeat1 size={14} /> Répéter
-              </button>
-              <button 
-                onClick={() => setMode('range')}
-                className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 text-sm font-medium transition-colors ${mode === 'range' ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400' : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-              >
-                <ArrowRightLeft size={14} /> Plage
-              </button>
+        <div className="pt-5 mt-2 border-t border-gray-100 dark:border-gray-700 grid grid-cols-1 md:grid-cols-2 gap-6 animate-in slide-in-from-top-2">
+          
+          {/* Column 1: Scope */}
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+                <ArrowRightLeft size={14} /> Étendue de lecture
+              </label>
+              <div className="flex flex-wrap gap-2">
+                <button 
+                  onClick={() => setPlayScope('surah')}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border ${playScope === 'surah' ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                >
+                  Sourate
+                </button>
+                <button 
+                  onClick={() => setPlayScope('range')}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border ${playScope === 'range' ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                >
+                  Plage
+                </button>
+                <button 
+                  onClick={() => setPlayScope('verse')}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border ${playScope === 'verse' ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                >
+                  1 Verset
+                </button>
+              </div>
+            </div>
+
+            {playScope === 'range' && (
+              <div className="space-y-2 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-800">
+                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                  Sélectionner les versets
+                </label>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 flex items-center bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <span className="px-3 text-xs text-gray-400">De</span>
+                    <select 
+                      value={rangeStart} 
+                      onChange={e => setRangeStart(Number(e.target.value))}
+                      className="flex-1 bg-transparent border-none text-sm text-gray-700 dark:text-gray-300 py-1.5 focus:ring-0 cursor-pointer"
+                    >
+                      {verses.map(v => (
+                        <option key={v.number} value={v.number}>{v.number}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex-1 flex items-center bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <span className="px-3 text-xs text-gray-400">À</span>
+                    <select 
+                      value={rangeEnd} 
+                      onChange={e => setRangeEnd(Number(e.target.value))}
+                      className="flex-1 bg-transparent border-none text-sm text-gray-700 dark:text-gray-300 py-1.5 focus:ring-0 cursor-pointer"
+                    >
+                      {verses.filter(v => v.number >= rangeStart).map(v => (
+                        <option key={v.number} value={v.number}>{v.number}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Column 2: Repeats */}
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+                <Repeat1 size={14} /> Répéter chaque verset
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {repeatOptions.map(count => (
+                  <button
+                    key={`v-${count}`}
+                    onClick={() => {
+                      setVerseRepeatCount(count)
+                      setCurrentVerseRepeats(0)
+                    }}
+                    className={`w-10 h-10 rounded-lg text-sm font-medium transition-colors border flex items-center justify-center ${verseRepeatCount === count ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-400' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                  >
+                    {count === 'infinite' ? '∞' : `${count}x`}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+                <Repeat1 size={14} /> Répéter la sélection
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {repeatOptions.map(count => (
+                  <button
+                    key={`s-${count}`}
+                    onClick={() => {
+                      setScopeRepeatCount(count)
+                      setCurrentScopeRepeats(0)
+                    }}
+                    className={`w-10 h-10 rounded-lg text-sm font-medium transition-colors border flex items-center justify-center ${scopeRepeatCount === count ? 'bg-purple-50 dark:bg-purple-900/30 border-purple-200 dark:border-purple-700 text-purple-700 dark:text-purple-400' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                  >
+                    {count === 'infinite' ? '∞' : `${count}x`}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[10px] text-gray-400 pt-1 leading-tight">
+                Idéal pour la mémorisation : Jouez chaque verset 3x, et répétez toute la plage 5x.
+              </p>
             </div>
           </div>
-
-          {/* Contextual Options based on Mode */}
-          <div className="space-y-2">
-            {mode === 'loop-verse' && (
-              <>
-                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Répétitions du verset
-                </label>
-                <div className="flex gap-2">
-                  {[2, 3, 5, 10, 'infinite'].map(count => (
-                    <button
-                      key={count}
-                      onClick={() => setVerseRepeatCount(count)}
-                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${verseRepeatCount === count ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400' : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-                    >
-                      {count === 'infinite' ? '∞' : `${count}x`}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {mode === 'range' && (
-              <>
-                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Sélectionner la plage (versets)
-                </label>
-                <div className="flex items-center gap-2">
-                  <select 
-                    value={rangeStart} 
-                    onChange={e => setRangeStart(Number(e.target.value))}
-                    className="bg-gray-50 dark:bg-gray-800 border-none rounded-lg text-sm text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-emerald-500"
-                  >
-                    {verses.map(v => (
-                      <option key={v.number} value={v.number}>{v.number}</option>
-                    ))}
-                  </select>
-                  <span className="text-gray-400">à</span>
-                  <select 
-                    value={rangeEnd} 
-                    onChange={e => setRangeEnd(Number(e.target.value))}
-                    className="bg-gray-50 dark:bg-gray-800 border-none rounded-lg text-sm text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-emerald-500"
-                  >
-                    {verses.filter(v => v.number >= rangeStart).map(v => (
-                      <option key={v.number} value={v.number}>{v.number}</option>
-                    ))}
-                  </select>
-                </div>
-              </>
-            )}
-          </div>
+          
         </div>
       )}
     </div>
