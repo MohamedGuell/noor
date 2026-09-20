@@ -1,14 +1,27 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, Eye, EyeOff, Volume2 } from 'lucide-react'
 import { useProgress } from '../../context/ProgressContext'
 import { alphabet } from '../../data/arabicLessons'
 
 export default function AlphabetLesson() {
-  const { isLessonCompleted, completeLesson } = useProgress()
+  const { isLessonCompleted, completeLesson, addCardsToSRS } = useProgress()
   const completed = isLessonCompleted('alphabet')
   const [selectedLetter, setSelectedLetter] = useState(alphabet[0])
   const [showExample, setShowExample] = useState(true)
+
+  useEffect(() => {
+    if (alphabet) {
+      const cards = alphabet.map((letter, i) => ({
+        id: `alphabet_${i}`,
+        type: 'alphabet',
+        front: letter.letter || letter.ar,
+        back: letter.name || letter.fr,
+        extra: letter.phonetic || letter.name
+      }))
+      addCardsToSRS(cards)
+    }
+  }, [addCardsToSRS])
 
   const playAudio = (text) => {
     if ('speechSynthesis' in window) {

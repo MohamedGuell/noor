@@ -11,7 +11,10 @@ export default function Dashboard() {
     totalLessons,
     totalSurahs,
     resetProgress,
+    getDueCards,
   } = useProgress()
+
+  const dueCards = getDueCards()
 
   return (
     <div className="space-y-8 pb-20 md:pb-0">
@@ -72,6 +75,27 @@ export default function Dashboard() {
           </p>
         </div>
       </section>
+
+      {/* SRS Due Cards Widget */}
+      {dueCards.length > 0 && (
+        <section className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-blue-900/20 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
+          <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div className="text-center sm:text-left">
+              <h3 className="text-2xl font-bold mb-2">Révisions quotidiennes</h3>
+              <p className="text-blue-100 text-sm max-w-md">
+                Vous avez <strong className="text-white text-lg">{dueCards.length}</strong> cartes mémoire en attente. Ne brisez pas votre chaîne d'apprentissage !
+              </p>
+            </div>
+            <Link
+              to="/revisions"
+              className="whitespace-nowrap px-8 py-4 bg-white text-blue-700 hover:bg-blue-50 rounded-2xl font-bold shadow-lg transition-transform hover:scale-105 active:scale-95"
+            >
+              Lancer la session
+            </Link>
+          </div>
+        </section>
+      )}
 
       {/* Main Navigation Cards */}
       <section className="grid grid-cols-1 md:grid-cols-3 gap-6">

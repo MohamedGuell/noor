@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useParams, Navigate } from 'react-router-dom'
 import { ArrowLeft, CheckCircle2, Eye, EyeOff, Volume2 } from 'lucide-react'
 import { useProgress } from '../../context/ProgressContext'
@@ -6,10 +6,23 @@ import { vocabulary } from '../../data/arabicLessons'
 
 export default function VocabularyLesson() {
   const { category } = useParams()
-  const { isLessonCompleted, completeLesson } = useProgress()
+  const { isLessonCompleted, completeLesson, addCardsToSRS } = useProgress()
   const [revealedWords, setRevealedWords] = useState(new Set())
 
   const vocabData = vocabulary[category]
+
+  useEffect(() => {
+    if (vocabData && vocabData.words) {
+      const cards = vocabData.words.map((word, i) => ({
+        id: `vocab_${category}_${i}`,
+        type: 'vocab',
+        front: word.ar,
+        back: word.fr,
+        extra: word.phonetic
+      }))
+      addCardsToSRS(cards)
+    }
+  }, [vocabData, category, addCardsToSRS])
   
   const playAudio = (text) => {
     if ('speechSynthesis' in window) {

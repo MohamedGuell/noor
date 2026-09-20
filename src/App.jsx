@@ -8,6 +8,7 @@ import VocabularyLesson from './pages/lessons/VocabularyLesson'
 import QuizPage from './pages/lessons/QuizPage'
 import QuranModule from './pages/QuranModule'
 import PrayersModule from './pages/PrayersModule'
+import ReviewSession from './pages/ReviewSession'
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <Route path="arabe/harakat" element={<HarakatLesson />} />
         <Route path="arabe/vocabulaire/:category" element={<VocabularyLesson />} />
         <Route path="arabe/quiz/:lessonId" element={<QuizPage />} />
+        <Route path="revisions" element={<ReviewSession />} />
         <Route path="coran" element={<QuranModule />} />
         <Route path="prieres" element={<PrayersModule />} />
       </Route>

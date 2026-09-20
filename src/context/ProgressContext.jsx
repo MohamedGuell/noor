@@ -53,11 +53,6 @@ export function ProgressProvider({ children }) {
         }
         if (lvl === updated.currentLevel) {
           const allDone = lessons.every(l => updated.completedLessons.includes(l))
-          if (allDone && lvl < 3) {
-            updated.currentLevel = lvl + 1
-          }
-        }
-      }
       return updated
     })
   }, [])
@@ -83,6 +78,8 @@ export function ProgressProvider({ children }) {
 
   const resetProgress = useCallback(() => {
     setProgress(defaultProgress)
+    setSrsData({})
+    localStorage.removeItem('noor_srs_data')
   }, [])
 
   const isLessonCompleted = useCallback((lessonId) => {
@@ -93,15 +90,70 @@ export function ProgressProvider({ children }) {
     return progress.memorizedSurahs.includes(surahNumber)
   }, [progress.memorizedSurahs])
 
-  const totalLessons = 5 // alphabet + harakat + 3 vocab
-  const totalSurahs = 10
+  // SRS Methods
+  const addCardsToSRS = (cards) => {
+    setSrsData(prev => {
+      const newData = { ...prev }
+      let added = false
+      cards.forEach(card => {
+        if (!newData[card.id]) {
+          newData[card.id] = {
+            ...card,
+            easeFactor: 2.5,
+            interval: 0,
+            repetitions: 0,
+            nextReviewDate: new Date().toISOString()
+          }
+          added = true
+        }
+      })
+      return added ? newData : prev
+    })
+  }
+
+  const updateCardProgress = (cardId, grade) => {
+    setSrsData(prev => {
+      const card = prev[cardId]
+      if (!card) return prev
+      
+      const newStats = calculateNextReview(
+        grade,
+        card.easeFactor,
+        card.interval,
+        card.repetitions
+      )
+      
+      return {
+        ...prev,
+        [cardId]: {
+          ...card,
+          ...newStats
+        }
+      }
+    })
+  }
+
+  const getDueCards = () => {
+    const now = new Date()
+    return Object.values(srsData).filter(card => {
+      const reviewDate = new Date(card.nextReviewDate)
+      return reviewDate <= now
+    })
+  }
+
+  const totalLessons = 6
+  const totalSurahs = 114
   const completedCount = progress.completedLessons.length
   const memorizedCount = progress.memorizedSurahs.length
   const overallProgress = Math.round(
     ((completedCount + memorizedCount) / (totalLessons + totalSurahs)) * 100
   )
+  const currentLevel = Math.floor(overallProgress / 20) + 1
 
   const value = {
+    // Legacy mapping for backwards compatibility (especially Dashboard)
+    completedLessons: progress.completedLessons,
+    memorizedSurahs: progress.memorizedSurahs,
     progress,
     completeLesson,
     saveQuizScore,
@@ -114,6 +166,12 @@ export function ProgressProvider({ children }) {
     completedCount,
     memorizedCount,
     overallProgress,
+    currentLevel,
+    // SRS Methods
+    srsData,
+    addCardsToSRS,
+    updateCardProgress,
+    getDueCards,
   }
 
   return (
