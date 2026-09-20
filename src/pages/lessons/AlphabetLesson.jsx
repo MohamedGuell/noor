@@ -53,7 +53,10 @@ export default function AlphabetLesson() {
         {alphabet.map((item) => (
           <button
             key={item.id}
-            onClick={() => setSelectedLetter(item)}
+            onClick={() => {
+              setSelectedLetter(item)
+              playAudio(item.letter)
+            }}
             className={`aspect-square flex flex-col items-center justify-center rounded-xl border-2 transition-all ${
               selectedLetter?.id === item.id
                 ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30'

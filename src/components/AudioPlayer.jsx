@@ -18,30 +18,27 @@ export default function VerseAudioPlayer({ verses, onVerseChange, activeVerseNum
 
   const audioRef = useRef(null)
 
-  // Synchroniser avec la sélection externe
+  // Synchroniser avec la sélection externe (quand l'utilisateur clique sur un verset)
   useEffect(() => {
     if (activeVerseNumber) {
       const index = verses.findIndex(v => v.number === activeVerseNumber)
       if (index !== -1 && index !== currentIndex) {
-        setCurrentIndex(index)
-        setCurrentVerseRepeats(0) // Reset repeats when manually changed
+        setCurrentVerseRepeats(0)
+        playVerseByIndex(index)
       }
     }
-  }, [activeVerseNumber, verses, currentIndex])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeVerseNumber, verses])
 
-  // Charger le nouveau verset (seulement quand l'index change)
+  // Gérer la lecture automatique lors de l'appui sur Play (si isPlaying change via le bouton togglePlay)
   useEffect(() => {
-    if (audioRef.current && verses[currentIndex]) {
-      audioRef.current.src = verses[currentIndex].audioUrl
-      audioRef.current.load()
+    if (isPlaying && audioRef.current && audioRef.current.paused) {
+      // S'assurer que la source est chargée si ce n'est pas déjà le cas
+      if (!audioRef.current.src && verses[currentIndex]) {
+         audioRef.current.src = verses[currentIndex].audioUrl
+         audioRef.current.load()
+      }
       
-      if (onVerseChange) onVerseChange(verses[currentIndex].number)
-    }
-  }, [currentIndex, verses, onVerseChange])
-
-  // Gérer la lecture automatique après changement de verset ou appui sur Play
-  useEffect(() => {
-    if (isPlaying && audioRef.current) {
       const playPromise = audioRef.current.play()
       if (playPromise !== undefined) {
         playPromise.catch(e => {
@@ -49,32 +46,52 @@ export default function VerseAudioPlayer({ verses, onVerseChange, activeVerseNum
           setIsPlaying(false)
         })
       }
-    } else if (!isPlaying && audioRef.current) {
+    } else if (!isPlaying && audioRef.current && !audioRef.current.paused) {
       audioRef.current.pause()
     }
-  }, [currentIndex, isPlaying])
+  }, [isPlaying, currentIndex, verses])
 
   const togglePlay = () => {
     setIsPlaying(!isPlaying)
   }
 
+  const playVerseByIndex = (index) => {
+    if (!audioRef.current || !verses[index]) return
+    
+    // Set src and play immediately to bypass strict browser autoplay policies
+    audioRef.current.src = verses[index].audioUrl
+    audioRef.current.load()
+    
+    if (isPlaying) {
+      audioRef.current.play().catch(e => {
+        console.log('Autoplay bloqué:', e)
+        setIsPlaying(false)
+      })
+    }
+    
+    setCurrentIndex(index)
+    if (onVerseChange) onVerseChange(verses[index].number)
+  }
+
   const playNext = () => {
     if (currentIndex < verses.length - 1) {
-      setCurrentIndex(prev => prev + 1)
       setCurrentVerseRepeats(0)
+      playVerseByIndex(currentIndex + 1)
     } else {
-      // Si on est à la fin de la sourate
       if (mode === 'surah') {
         setCurrentIndex(0)
         setIsPlaying(false)
+        if (audioRef.current && verses[0]) {
+          audioRef.current.src = verses[0].audioUrl
+        }
       }
     }
   }
 
   const playPrevious = () => {
     if (currentIndex > 0) {
-      setCurrentIndex(prev => prev - 1)
       setCurrentVerseRepeats(0)
+      playVerseByIndex(currentIndex - 1)
     }
   }
 
@@ -89,9 +106,8 @@ export default function VerseAudioPlayer({ verses, onVerseChange, activeVerseNum
     if (mode === 'loop-verse') {
       if (verseRepeatCount === 'infinite' || currentVerseRepeats < verseRepeatCount - 1) {
         setCurrentVerseRepeats(prev => prev + 1)
-        audioRef.current.play()
+        audioRef.current.play().catch(console.error)
       } else {
-        // Avancer au prochain et réinitialiser les répétitions
         setCurrentVerseRepeats(0)
         playNext()
       }
@@ -102,13 +118,12 @@ export default function VerseAudioPlayer({ verses, onVerseChange, activeVerseNum
       if (currentVerseNum < rangeEnd) {
         playNext()
       } else {
-        // Retourner au début de la plage
         const startIndex = verses.findIndex(v => v.number === rangeStart)
         if (startIndex !== -1) {
-          setCurrentIndex(startIndex)
-          // On peut choisir d'arrêter ou de boucler la plage
-          // setIsPlaying(false) 
-          audioRef.current.play()
+          setCurrentVerseRepeats(0)
+          playVerseByIndex(startIndex)
+        } else {
+          setIsPlaying(false)
         }
       }
       return
